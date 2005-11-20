@@ -33,6 +33,13 @@ struct pencil_diagram *pencil_create(void)
 		return 0;
 	}
 
+	root_group->group_name = strdup("root group");
+	if (!root_group->group_name) {
+		free(root_group);
+		free(diagram);
+		return 0;
+	}
+
 	diagram->root = root_group;
 	diagram->current_group = root_group;
 

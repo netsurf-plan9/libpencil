@@ -25,7 +25,7 @@ typedef enum {
 	pencil_IO_EOF = rufl_IO_EOF,
 } pencil_code;
 
-/** A colour as 0xRRGGBB. */
+/** A colour as 0xBBGGRR00. */
 typedef uint32_t pencil_colour;
 
 #define pencil_TRANSPARENT 0xffffffff
