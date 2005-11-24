@@ -24,6 +24,7 @@ typedef enum {
 	pencil_GROUP,
 	pencil_TEXT,
 	pencil_PATH,
+	pencil_SPRITE,
 } pencil_item_type;
 
 struct pencil_item {
@@ -35,6 +36,7 @@ struct pencil_item {
 	char *group_name;
 
 	int x, y;
+
 	const char *font_family;
 	rufl_style font_style;
 	unsigned int font_size;
@@ -50,6 +52,9 @@ struct pencil_item {
 	int cap_length;
 	bool even_odd;
 	pencil_pattern pattern;
+
+	int width, height;
+	const char *sprite;
 
 	struct pencil_item *parent;
 	struct pencil_item *next;

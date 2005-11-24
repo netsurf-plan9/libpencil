@@ -8,8 +8,12 @@
 #include <assert.h>
 #include <stdio.h>
 #include <oslib/osfile.h>
+#include <oslib/osspriteop.h>
 #include <rufl.h>
 #include "pencil.h"
+
+
+#define SPRITE "Resources:$.Resources.Desktop.Sprites"
 
 
 static void test_pencil(void);
@@ -43,6 +47,9 @@ void test_pencil(void)
 	char *drawfile_buffer;
 	size_t drawfile_size;
 	os_error *error;
+	fileswitch_object_type obj_type;
+	int size;
+	osspriteop_area *area;
 
 	diagram = pencil_create();
 	if (!diagram) {
@@ -84,6 +91,42 @@ void test_pencil(void)
 		return;
 	}
 
+	error = xosfile_read_no_path(SPRITE, &obj_type, 0, 0, &size, 0);
+	if (error) {
+		printf("xosfile_read_no_path failed: 0x%x: %s\n",
+				error->errnum, error->errmess);
+		return;
+	}
+	if (obj_type != fileswitch_IS_FILE) {
+		printf("File " SPRITE " does not exist\n");
+		return;
+	}
+
+	area = malloc(size + 4);
+	if (!area) {
+		printf("Out of memory\n");
+		return;
+	}
+	area->size = size + 4;
+	area->sprite_count = 0;
+	area->first = 0;
+	area->used = 16;
+
+	error = xosspriteop_load_sprite_file(osspriteop_USER_AREA,
+			area, SPRITE);
+	if (error) {
+		printf("xosspriteop_load_sprite_file failed: 0x%x: %s\n",
+				error->errnum, error->errmess);
+		return;
+	}
+
+	code = pencil_sprite(diagram, 400, 200, 200, 100,
+			((char *) area) + area->first);
+	if (code != pencil_OK) {
+		printf("pencil_sprite failed: %i\n", code);
+		return;
+	}
+
 	pencil_dump(diagram);
 
 	code = pencil_save_drawfile(diagram, "Pencil-Test",
@@ -101,4 +144,6 @@ void test_pencil(void)
 				error->errnum, error->errmess);
 		return;
 	}
+
+	pencil_free(diagram);
 }

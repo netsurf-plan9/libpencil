@@ -117,6 +117,28 @@ pencil_code pencil_path(struct pencil_diagram *diagram,
 }
 
 
+pencil_code pencil_sprite(struct pencil_diagram *diagram,
+		int x, int y, int width, int height,
+		const char *sprite)
+{
+	struct pencil_item *item;
+
+	item = pencil_new_item(pencil_SPRITE);
+	if (!item)
+		return pencil_OUT_OF_MEMORY;
+
+	item->x = x;
+	item->y = y;
+	item->width = width;
+	item->height = height;
+	item->sprite = sprite;
+
+	pencil_append_child(diagram->current_group, item);
+
+	return pencil_OK;
+}
+
+
 pencil_code pencil_group_start(struct pencil_diagram *diagram,
 		const char *name)
 {
@@ -234,6 +256,10 @@ void pencil_dump_item(struct pencil_item *item, unsigned int depth)
 		if (item->even_odd)
 			printf("even-odd, ");
 		printf("pattern %i", item->pattern);
+		break;
+	case pencil_SPRITE:
+		printf("SPRITE (%i %i) (%i x %i)\n", item->x, item->y,
+				item->width, item->height);
 		break;
 	default:
 		printf("UNKNOWN");

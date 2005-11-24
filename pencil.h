@@ -65,6 +65,9 @@ pencil_code pencil_path(struct pencil_diagram *diagram,
 		pencil_cap start_cap, pencil_cap end_cap,
 		int cap_width, int cap_length,
 		bool even_odd, pencil_pattern pattern);
+pencil_code pencil_sprite(struct pencil_diagram *diagram,
+		int x, int y, int width, int height,
+		const char *sprite);
 
 pencil_code pencil_group_start(struct pencil_diagram *diagram,
 		const char *name);

@@ -20,8 +20,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <oslib/drawfile.h>
+#include <oslib/osspriteop.h>
 #include <rufl.h>
 #include "pencil_internal.h"
+
+/* Maximum grouping depth (too deep crashes Draw). */
+#define MAX_DEPTH 10
 
 
 struct pencil_save_context {
@@ -37,13 +41,13 @@ struct pencil_save_context {
 
 
 static void pencil_save_pass1(struct pencil_save_context *context,
-		struct pencil_item *item);
+		struct pencil_item *item, unsigned int depth);
 static void pencil_save_pass1_text_callback(void *c,
 		const char *font_name, unsigned int font_size,
 		const char *s8, unsigned short *s16, unsigned int n,
 		int x, int y);
 static void pencil_save_pass2(struct pencil_save_context *context,
-		struct pencil_item *item);
+		struct pencil_item *item, unsigned int depth);
 static void pencil_save_pass2_text_callback(void *c,
 		const char *font_name, unsigned int font_size,
 		const char *s8, unsigned short *s16, unsigned int n,
@@ -67,7 +71,7 @@ pencil_code pencil_save_drawfile(struct pencil_diagram *diagram,
 	*drawfile_size = 0;
 
 	/* pass 1 */
-	pencil_save_pass1(&context, diagram->root);
+	pencil_save_pass1(&context, diagram->root, 0);
 	if (context.code != pencil_OK) {
 		for (i = 0; i != context.font_count; i++)
 			free(context.font_list[i]);
@@ -120,7 +124,7 @@ pencil_code pencil_save_drawfile(struct pencil_diagram *diagram,
 	/* pass 2 */
 	context.buffer = buffer;
 	context.b = b;
-	pencil_save_pass2(&context, diagram->root);
+	pencil_save_pass2(&context, diagram->root, 0);
 
 	/* free font list */
 	for (i = 0; i != context.font_count; i++)
@@ -141,7 +145,7 @@ pencil_code pencil_save_drawfile(struct pencil_diagram *diagram,
 
 
 void pencil_save_pass1(struct pencil_save_context *context,
-		struct pencil_item *item)
+		struct pencil_item *item, unsigned int depth)
 {
 	rufl_code code;
 	struct pencil_item *child;
@@ -150,6 +154,8 @@ void pencil_save_pass1(struct pencil_save_context *context,
 
 	switch (item->type) {
 	case pencil_GROUP:
+		if (!item->children || MAX_DEPTH <= depth)
+			break;
 		context->size += 36;
 		break;
 	case pencil_TEXT:
@@ -167,12 +173,16 @@ void pencil_save_pass1(struct pencil_save_context *context,
 		if (item->pattern != pencil_SOLID)
 			context->size += 12;
 		break;
+	case pencil_SPRITE:
+		context->size += 24 + ((const osspriteop_header *)
+				item->sprite)->size;
+		break;
 	default:
 		assert(0);
 	}
 
 	for (child = item->children; child; child = child->next) {
-		pencil_save_pass1(context, child);
+		pencil_save_pass1(context, child, depth + 1);
 		if (context->code != pencil_OK)
 			return;
 	}
@@ -235,9 +245,10 @@ void pencil_save_pass1_text_callback(void *c,
 
 
 void pencil_save_pass2(struct pencil_save_context *context,
-		struct pencil_item *item)
+		struct pencil_item *item, unsigned int depth)
 {
 	drawfile_object *object = (drawfile_object *) context->b;
+	bool group = false;
 	rufl_code code;
 	int *path;
 	unsigned int i;
@@ -247,6 +258,9 @@ void pencil_save_pass2(struct pencil_save_context *context,
 
 	switch (item->type) {
 	case pencil_GROUP:
+		if (!item->children || MAX_DEPTH <= depth)
+			break;
+		group = true;
 		object->type = drawfile_TYPE_GROUP;
 		object->size = 36;
 		strncpy(object->data.group.name, item->group_name, 12);
@@ -319,19 +333,30 @@ void pencil_save_pass2(struct pencil_save_context *context,
 		}
 		context->b += object->size;
 		break;
+	case pencil_SPRITE:
+		object->type = drawfile_TYPE_SPRITE;
+		object->size = 24 + ((const osspriteop_header *)
+				item->sprite)->size;
+		object->data.sprite.bbox.x0 = item->x * 256;
+		object->data.sprite.bbox.y0 = item->y * 256;
+		object->data.sprite.bbox.x1 = (item->x + item->width) * 256;
+		object->data.sprite.bbox.y1 = (item->y + item->height) * 256;
+		memcpy(&object->data.sprite.header, item->sprite,
+				object->size - 24);
+		context->b += object->size;
+		break;
 	default:
 		assert(0);
 	}
 
 	for (child = item->children; child; child = child->next) {
-		pencil_save_pass2(context, child);
+		pencil_save_pass2(context, child, depth + 1);
 		if (context->code != pencil_OK)
 			return;
 	}
 
-	if (item->type == pencil_GROUP) {
+	if (group)
 		object->size = context->b - (char *) object;
-	}
 }
 
 
