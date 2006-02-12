@@ -59,7 +59,7 @@ void test_pencil(void)
 
 	code = pencil_text(diagram,
 			100, 40,
-			"Homerton", rufl_REGULAR,
+			"Homerton", rufl_WEIGHT_400,
 			320,
 			"Hello, world!", 13,
 			0x000000);
@@ -82,7 +82,7 @@ void test_pencil(void)
 
 	code = pencil_text(diagram,
 			100, 400,
-			"NewHall", rufl_REGULAR,
+			"NewHall", rufl_WEIGHT_400,
 			320,
 			utf8_test, sizeof utf8_test,
 			0xff0000);
