@@ -16,8 +16,8 @@ WARNFLAGS := -Wall -W -Wundef -Wpointer-arith -Wcast-align \
 	-Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes \
 	-Wmissing-declarations -Wnested-externs -pedantic
 # BeOS/Haiku/AmigaOS4 standard library headers create warnings
-ifneq ($(TARGET),beos)
-  ifneq ($(TARGET),AmigaOS)
+ifneq ($(BUILD),i586-pc-haiku)
+  ifneq ($(findstring amigaos,$(BUILD)),amigaos)
     WARNFLAGS := $(WARNFLAGS) -Werror
   endif
 endif
@@ -31,7 +31,7 @@ endif
 
 # OSLib
 ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
-  ifeq ($(TARGET),riscos)
+  ifeq ($(BUILD),arm-unknown-riscos)
     CFLAGS := $(CFLAGS) -I$(PREFIX)/include
     LDFLAGS := $(LDFLAGS) -lOSLib32
   endif
